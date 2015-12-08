@@ -1,5 +1,18 @@
 #include <gtk/gtk.h>
 
+struct UpdateBuffer {
+   GtkEntryBuffer *buffer;
+   char text[256];
+};
+
+/*
+ * Receives a pointer to a widget button and a pointer to a UpdateBuffer structure
+ * Updates the buffer withe the text provided by the structure
+ */
+void cbb_update_buffer (GtkWidget *button, struct UpdateBuffer *buffer) {
+   gtk_entry_buffer_set_text (GTK_ENTRY_BUFFER (button), buffer->text, -1);
+}
+
 int main (int argc, char *argv[]) {
    gtk_init (&argc, &argv);
    
