@@ -7,6 +7,8 @@ int main (int argc, char *argv[]) {
    GtkWidget *display; // the display of the minicalculator, an entry widget
    GtkWidget *box; // contains the display and the table a grid widget
    GtkWidget *table; // a grid that ordonates the buttons of the minicalculator
+   GtkEntryBuffer *bufy;
+
    GtkWidget *butt [4][6]; // contains the buttons
    // labels for the buttons, that's why it matches butt's design
    gchar *butt_label [4][6] = {
@@ -24,7 +26,11 @@ int main (int argc, char *argv[]) {
 
    box = gtk_grid_new ();
    table = gtk_grid_new ();
-   display = gtk_entry_new ();
+
+   bufy = gtk_entry_buffer_new ("0", -1);
+   display = gtk_entry_new_with_buffer (bufy);
+   gtk_entry_set_alignment (GTK_ENTRY (display), 1);
+   gtk_editable_set_editable (GTK_EDITABLE (display), FALSE);
 
    // initializes the buttons with the corresponding labels and attaches them to the grid table  
    int i, j;
@@ -39,8 +45,8 @@ int main (int argc, char *argv[]) {
    gtk_grid_attach (GTK_GRID (box), table, 0, 1, 1, 1);
 
    gtk_container_add (GTK_CONTAINER (gui), box);
-   gtk_widget_show_all (gui);  
-   
+   gtk_widget_show_all (gui); 
+
    gtk_main ();
    return 0;  
 }
