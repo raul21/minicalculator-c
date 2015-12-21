@@ -60,7 +60,7 @@ long double update_value (long double value, int nr_digits, double status, char 
  * Receives two numbers, an operator and returns the result of the calculation
  *
  */
-long double calculate (long double first_value, long_double second_value, char operator) {
+long double calculate (long double first_value, long double second_value, char operator) {
    switch (operator) {
       case '+':
          return first_value + second_value;
@@ -74,7 +74,7 @@ long double calculate (long double first_value, long_double second_value, char o
       case '/':
          if (second_value != 0) {
             return first_value / second_value;
-            brea;
+            break;
          } else {
             return 0;
             break;
@@ -107,8 +107,8 @@ void cbb_update_buffer_2 (GtkWidget *button, GtkEntryBuffer *buffer) {
    long double result;
 
    if (label[0] == '+' || label[0] == '-'|| label[0] == '*' || label[0] == '/' || label[0] == '=') {
-      operator = label [0];
-      if (status < 2) {
+      operator = label [0];  /**** <<<-------   !!!! */
+      if (status == 1 || status == 1.5) {
          status = 2;
          nr_digits = 0; // start from 0 for the second value
          return; // stop here and waiting for figures for the second value
@@ -136,6 +136,9 @@ void cbb_update_buffer_2 (GtkWidget *button, GtkEntryBuffer *buffer) {
    } else if (status == 3) {
       first_value = calculate (first_value, second_value, operator);
       long_double_to_string (val_as_str, 256, first_value);
+      second_value = 0;
+      status = 2;
+      nr_digits = -1;
    }
 
    gtk_entry_buffer_set_text (GTK_ENTRY_BUFFER (buffer), val_as_str, -1);
