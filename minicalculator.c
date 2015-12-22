@@ -103,9 +103,9 @@ void cbb_update_buffer_2 (GtkWidget *button, GtkEntryBuffer *buffer) {
    static long double first_value = 0;
    static long double second_value = 0;
    static int nr_digits = 0;
-   char operator = ' ';
-   char new_operator = ' ';
-   long double result;
+   static char operator = ' ';
+   static char new_operator = ' ';
+   static long double result;
 
    if (label[0] == '+' || label[0] == '-'|| label[0] == '*' || label[0] == '/' || label[0] == '=') {
       new_operator = label [0];  /**** <<<-------   !!!! */
