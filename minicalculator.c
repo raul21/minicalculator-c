@@ -99,15 +99,19 @@ void cbb_update_buffer_2 (GtkWidget *button, GtkEntryBuffer *buffer) {
     * status == 2.5, the second value is updating after the comma
     * status == 3, both values are ready. Calculation time
     */
-   static double status = 1; // at the begining, first value is updating
+   static double status = 1; // at the begining, the first value is updating
    static long double first_value = 0;
    static long double second_value = 0;
    static int nr_digits = 0;
    char operator = ' ';
+   char new_operator = ' ';
    long double result;
 
    if (label[0] == '+' || label[0] == '-'|| label[0] == '*' || label[0] == '/' || label[0] == '=') {
-      operator = label [0];  /**** <<<-------   !!!! */
+      new_operator = label [0];  /**** <<<-------   !!!! */
+      if (operator == ' ') {
+         operator = new_operator;
+      }
       if (status == 1 || status == 1.5) {
          status = 2;
          nr_digits = 0; // start from 0 for the second value
@@ -139,6 +143,7 @@ void cbb_update_buffer_2 (GtkWidget *button, GtkEntryBuffer *buffer) {
       second_value = 0;
       status = 2;
       nr_digits = -1;
+      operator = new_operator;
    }
 
    gtk_entry_buffer_set_text (GTK_ENTRY_BUFFER (buffer), val_as_str, -1);
