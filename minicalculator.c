@@ -117,7 +117,7 @@ void cbb_update_buffer_2 (GtkWidget *button, GtkEntryBuffer *buffer) {
          nr_digits = 0; // start from 0 for the second value
          return; // stop here and waiting for figures for the second value
       } else if (status == 2 || status == 2.5) {
-         status = 3;
+         status = 3; // <----------------------- !!!
       }
    } else if (strcmp (label, "Bin") == 0 || strcmp (label, "Dec") == 0 || strcmp (label, "Hex") == 0) {
       status = 1;
