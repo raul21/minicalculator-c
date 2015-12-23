@@ -24,10 +24,46 @@ struct UpdateBuffer {
 };
 
 /*
- * Receives a pointer to a widget button and a pointer to a UpdateBuffer structure
+ * Receives a pointer to a UpdateBuffer 'object' 
+ * Modifies the string corresponding to the first_value or the second_value
+ * status 1: first value is being written
+ * status 1.5: first value is being written but after the floating point
+ * status 2: the second value is being written 
+ * status 2.5: the second value is being written but after the floating point
+ */
+
+void updateValue (struct UpdateBuffer *pUpbuffer) {
+   if (pUpbuffer->Tdata.status == 1 || pUpbuffer->Tdata.status == 1.5) {
+      // update first value as string
+      strcat (pUpbuffer->Tdata.first_value_str, pUpbuffer->Tdata.label);
+   } else if (pUpbuffer->Tdata.status == 2 || pUpbuffer->Tdata.status == 2.5) {
+      // update second value as string
+      strcat (pUpbuffer->Tdata.second_value_str, pUpbuffer->Tdata.label);
+   }
+}
+
+/*
+ * Receives a pointer to a UpdateBuffer 'object'
  * Updates the buffer
  */
-void cbb_update_buffer (GtkWidget *button, struct UpdateBuffer *pUpbuffer) {
+
+void update_buffer ( struct UpdateBuffer *pUpbuffer) {
+   if (pUpbuffer->Tdata.status < 2) {
+      gtk_entry_buffer_set_text (GTK_ENTRY_BUFFER (pUpbuffer->bufy), 
+                                 pUpbuffer->Tdata.first_value_str,
+                                 -1);
+   } else if (pUpbuffer->Tdata.status < 3) {
+      gtk_entry_buffer_set_text (GTK_ENTRY_BUFFER (pUpbuffer->bufy),
+                                 pUpbuffer->Tdata.second_value_str,
+                                 -1);
+   }
+}
+
+/*
+ * Receives a pointer to a widget button and a pointer to a UpdateBuffer structure
+ * Updates the buffer after the input was precessed
+ */
+void cbb_input_manager (GtkWidget *button, struct UpdateBuffer *pUpbuffer) {
 
    // the input from the user
    strcpy (pUpbuffer->Tdata.label, gtk_button_get_label (GTK_BUTTON (button)));
@@ -52,7 +88,18 @@ void cbb_update_buffer (GtkWidget *button, struct UpdateBuffer *pUpbuffer) {
       }
       updateValue (pUpbuffer);
    } else if (strchr (operators, pUpbuffer->Tdata.label [0]) != NULL) {
-      // operation callback
+      
+      pUpbuffer->Tdata.new_operator = pUpbuffer->Tdata.label [0];
+
+      if (pUpbuffer->Tdata.operator == ' ') {
+         pUpbuffer->Tdata.operator = pUpbuffer->Tdata.new_operator;
+      }
+
+      if (pUpbuffer->Tdata.status < 2) {
+         pUpbuffer->Tdata.status = 2;
+      } else if (pUpbuffer->Tdata.status < 3) {
+         pUpbuffer->Tdata.status = 3;
+      }
    } else if (strchr (unar_operators, pUpbuffer->Tdata.label [0]) != NULL) {
       // operation on the first value 
    } else if (strcmp (pUpbuffer->Tdata.label, "Bin") != 0 ||
@@ -60,27 +107,12 @@ void cbb_update_buffer (GtkWidget *button, struct UpdateBuffer *pUpbuffer) {
               strcmp (pUpbuffer->Tdata.label, "Dec") != 0 ||
               strcmp (pUpbuffer->Tdata.label, "Hex") != 0) {
       // change the base
-   } 
-}
-
-
-/*
- * Receives a pointer to a UpdateBuffer 'object' 
- * Modifies the string corresponding to the first_value or the second_value
- * status 1: first value is being written
- * status 1.5: first value is being written but after the floating point
- * status 2: the second value is being written 
- * status 2.5: the second value is being written but after the floating point
- */
-
-void updateValue (struct UpdateBuffer *pUpbuffer) {
-   if (pUpbuffer->Tdata.status == 1 || pUpbuffer->Tdata.status == 1.5) {
-      // update first value as string
-      strcat (pUpbuffer->Tdata.first_value_str, pUpbuffer->Tdata.label);
-   } else if (pUpbuffer->Tdata.status == 2 || pUpbuffer->Tdata.status == 2.5) {
-      // update second value as string
-      strcat (pUpbuffer->Tdata.second_value_str, pUpbuffer->Tdata.label);
    }
+
+   // do_calculus (pUpbuffer);
+
+   // finally, the buffer can be updated
+   update_buffer (pUpbuffer); 
 }
 
 /*
@@ -89,6 +121,7 @@ void updateValue (struct UpdateBuffer *pUpbuffer) {
  * size, should match the length of the string
  * floaty, the number to be converted
  */
+
 void long_double_to_string (char *str, size_t size, long double floaty) {
    snprintf (str, size, "%0.12Lf", floaty);
 }
@@ -300,8 +333,8 @@ int main (int argc, char *argv[]) {
    box = gtk_grid_new ();
    table = gtk_grid_new ();
 
-   bufy = gtk_entry_buffer_new ("0", -1);
-   display = gtk_entry_new_with_buffer (bufy);
+   // bufy = gtk_entry_buffer_new ("0", -1);
+   display = gtk_entry_new_with_buffer (pUpbuffer->bufy);
    gtk_entry_set_alignment (GTK_ENTRY (display), 1);
    gtk_editable_set_editable (GTK_EDITABLE (display), FALSE);
 
@@ -312,8 +345,7 @@ int main (int argc, char *argv[]) {
       for (j = 0; j < 7; j++) {
          butt [i][j] = gtk_button_new_with_label (butt_label [i][j]);
          gtk_grid_attach (GTK_GRID (table), butt [i][j], j, i, 1, 1);
-         g_signal_connect (butt [i][j], "clicked", G_CALLBACK
-         (cbb_update_buffer), pUpbuffer);
+         g_signal_connect (butt [i][j], "clicked", G_CALLBACK (cbb_input_manager), pUpbuffer);
       }
    }
  
