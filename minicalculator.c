@@ -10,36 +10,36 @@ struct TrackData {
    int nr_digits;
    char operator;
    char new_operator;
+   char label [4];
 };
 
 
 
 struct UpdateBuffer {
-   GtkEntryBuffer *buffer;
-   TrackData *Tdata;
+   GtkEntryBuffer *bufy;
+   struct TrackData Tdata;
 };
 
 /*
  * Receives a pointer to a widget button and a pointer to a UpdateBuffer structure
  * Updates the buffer
  */
-void cbb_update_buffer (GtkWidget *button, struct UpdateBuffer *Upbuffer) {
-   char label [4];
-   char figures = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
+void cbb_update_buffer (GtkWidget *button, struct UpdateBuffer *pUpbuffer) {
+   char figures [] = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
                    'A', 'B', 'C', 'D', 'E', 'F'};
-   char operators = {'+', '-', '*', '/'};
-   char unar_operators = {};
-   char bases = {"Bin", "Oct", "Dec", "Hex"};
+   char operators [] = {'+', '-', '*', '/'};
+   char unar_operators [] = {};
+   char bases [4][4] = {"Bin", "Oct", "Dec", "Hex"};
 
-   strcpy (label, gtk_button_get_label (GTK_BUTTON(button)));
-   label [3] = '\0';
-   if (strchr (figures, label [0]) != NULL) {
+   strcpy (pUpbuffer->Tdata.label, gtk_button_get_label (GTK_BUTTON(button)));
+
+   if (strchr (figures, pUpbuffer->Tdata.label [0]) != NULL) {
       // update a value
-   } else if (strchr (operators, label [0] != NULL) {
+   //} else if (strchr (operators, pUpbuffer->Tdata.label [0] != NULL) {
       // operation callback
-   } else if (strchr (unar_operators, label [0] != NULL) {
+   //} else if (strchr (unar_operators, pUpbuffer->Tdata.label [0] != NULL) {
       // operation on the first value 
-   } else if (strcmp (bases, label) != 0) {
+   //} else if (strcmp (bases, pUpbuffer->Tdata.label) != 0) {
       // change the base
    } 
 }
@@ -47,7 +47,7 @@ void cbb_update_buffer (GtkWidget *button, struct UpdateBuffer *Upbuffer) {
 
 /*
  * The string receives the conversion of the float number to a string
- * str, a pointer to a string where the conversion are stored
+ * str, a pointer to a string where the result of the conversion are stored
  * size, should match the length of the string
  * floaty, the number to be converted
  */
@@ -229,6 +229,20 @@ int main (int argc, char *argv[]) {
    GtkEntryBuffer *bufy;
 
    struct UpdateBuffer Upbuffer;
+   struct UpdateBuffer *pUpbuffer;
+   pUpbuffer = &Upbuffer;
+   
+   // Initialization for the Upbuffer
+   Upbuffer.bufy = gtk_entry_buffer_new ("0", -1);
+   Upbuffer.Tdata.first_value = 0;
+   Upbuffer.Tdata.second_value = 0;
+   Upbuffer.Tdata.result = 0;
+   Upbuffer.Tdata.status = 1;
+   Upbuffer.Tdata.nr_digits = 0;
+   Upbuffer.Tdata.operator = ' ';
+   Upbuffer.Tdata.new_operator = ' ';
+   Upbuffer.Tdata.label[3] = '\0';
+
 
    GtkWidget *butt [4][7]; // contains the buttons
    // labels for the buttons, that's why it matches butt's design
@@ -260,7 +274,8 @@ int main (int argc, char *argv[]) {
       for (j = 0; j < 7; j++) {
          butt [i][j] = gtk_button_new_with_label (butt_label [i][j]);
          gtk_grid_attach (GTK_GRID (table), butt [i][j], j, i, 1, 1);
-         g_signal_connect (butt [i][j], "clicked", G_CALLBACK (cbb_update_buffer_3), Upbuffer);
+         g_signal_connect (butt [i][j], "clicked", G_CALLBACK
+         (cbb_update_buffer), pUpbuffer);
       }
    }
  
