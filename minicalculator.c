@@ -2,21 +2,48 @@
 #include <string.h>
 #include <stdlib.h>
 
+struct TrackData {
+   long double first_value;
+   long double second_value;
+   long double result;
+   double status;
+   int nr_digits;
+   char operator;
+   char new_operator;
+};
 
-// TO DELETE
+
+
 struct UpdateBuffer {
    GtkEntryBuffer *buffer;
-   char text[256];
+   TrackData *Tdata;
 };
 
 /*
  * Receives a pointer to a widget button and a pointer to a UpdateBuffer structure
- * Updates the buffer withe the text provided by the structure
+ * Updates the buffer
  */
-void cbb_update_buffer (GtkWidget *button, struct UpdateBuffer *buffer) {
-   gtk_entry_buffer_set_text (GTK_ENTRY_BUFFER (button), buffer->text, -1);
+void cbb_update_buffer (GtkWidget *button, struct UpdateBuffer *Upbuffer) {
+   char label [4];
+   char figures = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
+                   'A', 'B', 'C', 'D', 'E', 'F'};
+   char operators = {'+', '-', '*', '/'};
+   char unar_operators = {};
+   char bases = {"Bin", "Oct", "Dec", "Hex"};
+
+   strcpy (label, gtk_button_get_label (GTK_BUTTON(button)));
+   label [3] = '\0';
+   if (strchr (figures, label [0]) != NULL) {
+      // update a value
+   } else if (strchr (operators, label [0] != NULL) {
+      // operation callback
+   } else if (strchr (unar_operators, label [0] != NULL) {
+      // operation on the first value 
+   } else if (strcmp (bases, label) != 0) {
+      // change the base
+   } 
 }
-// END TO DELETE 
+
 
 /*
  * The string receives the conversion of the float number to a string
@@ -201,6 +228,8 @@ int main (int argc, char *argv[]) {
    GtkWidget *table; // a grid that ordonates the buttons of the minicalculator
    GtkEntryBuffer *bufy;
 
+   struct UpdateBuffer Upbuffer;
+
    GtkWidget *butt [4][7]; // contains the buttons
    // labels for the buttons, that's why it matches butt's design
    gchar *butt_label [4][7] = {
@@ -231,7 +260,7 @@ int main (int argc, char *argv[]) {
       for (j = 0; j < 7; j++) {
          butt [i][j] = gtk_button_new_with_label (butt_label [i][j]);
          gtk_grid_attach (GTK_GRID (table), butt [i][j], j, i, 1, 1);
-         g_signal_connect (butt [i][j], "clicked", G_CALLBACK (cbb_update_buffer_2), bufy);
+         g_signal_connect (butt [i][j], "clicked", G_CALLBACK (cbb_update_buffer_3), Upbuffer);
       }
    }
  
