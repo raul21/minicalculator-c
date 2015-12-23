@@ -25,21 +25,29 @@ struct UpdateBuffer {
  * Updates the buffer
  */
 void cbb_update_buffer (GtkWidget *button, struct UpdateBuffer *pUpbuffer) {
+
+   // the input from the user
+   strcpy (pUpbuffer->Tdata.label, gtk_button_get_label (GTK_BUTTON (button)));
+
    char figures [] = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
-                   'A', 'B', 'C', 'D', 'E', 'F'};
+                      'A', 'B', 'C', 'D', 'E', 'F'};
    char operators [] = {'+', '-', '*', '/'};
-   char unar_operators [] = {};
+   char unar_operators [] = {'b', 'o', 'd', 'h'};
    char bases [4][4] = {"Bin", "Oct", "Dec", "Hex"};
 
    strcpy (pUpbuffer->Tdata.label, gtk_button_get_label (GTK_BUTTON(button)));
 
    if (strchr (figures, pUpbuffer->Tdata.label [0]) != NULL) {
       // update a value
-   //} else if (strchr (operators, pUpbuffer->Tdata.label [0] != NULL) {
+      update_value_2 (pUpbuffer);
+   } else if (strchr (operators, pUpbuffer->Tdata.label [0]) != NULL) {
       // operation callback
-   //} else if (strchr (unar_operators, pUpbuffer->Tdata.label [0] != NULL) {
+   } else if (strchr (unar_operators, pUpbuffer->Tdata.label [0]) != NULL) {
       // operation on the first value 
-   //} else if (strcmp (bases, pUpbuffer->Tdata.label) != 0) {
+   } else if (strcmp (pUpbuffer->Tdata.label, "Bin") != 0 ||
+              strcmp (pUpbuffer->Tdata.label, "Oct") != 0 ||
+              strcmp (pUpbuffer->Tdata.label, "Dec") != 0 ||
+              strcmp (pUpbuffer->Tdata.label, "Hex") != 0) {
       // change the base
    } 
 }
