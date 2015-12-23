@@ -6,6 +6,9 @@ struct TrackData {
    long double first_value;
    long double second_value;
    long double result;
+   char first_value_str [64];
+   char second_value_str [64];
+   char result_str [64];
    double status;
    int nr_digits;
    char operator;
@@ -30,7 +33,7 @@ void cbb_update_buffer (GtkWidget *button, struct UpdateBuffer *pUpbuffer) {
    strcpy (pUpbuffer->Tdata.label, gtk_button_get_label (GTK_BUTTON (button)));
 
    char figures [] = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
-                      'A', 'B', 'C', 'D', 'E', 'F'};
+                      'A', 'B', 'C', 'D', 'E', 'F', '.'};
    char operators [] = {'+', '-', '*', '/'};
    char unar_operators [] = {'b', 'o', 'd', 'h'};
    char bases [4][4] = {"Bin", "Oct", "Dec", "Hex"};
@@ -38,8 +41,16 @@ void cbb_update_buffer (GtkWidget *button, struct UpdateBuffer *pUpbuffer) {
    strcpy (pUpbuffer->Tdata.label, gtk_button_get_label (GTK_BUTTON(button)));
 
    if (strchr (figures, pUpbuffer->Tdata.label [0]) != NULL) {
-      // update a value
-      update_value_2 (pUpbuffer);
+      if (pUpbuffer->Tdata.label [0] == '.') {
+         if (pUpbuffer->Tdata.status == 1) {
+            pUpbuffer->Tdata.status = 1.5;
+         } else if (pUpbuffer->Tdata.status == 2) {
+            pUpbuffer->Tdata.status = 2.5;
+         } else if (pUpbuffer->Tdata.status == 1.5 || pUpbuffer->Tdata.status == 2.5) {
+            return; // one floating point in a single number is enough
+         }
+      }
+      updateValue (pUpbuffer);
    } else if (strchr (operators, pUpbuffer->Tdata.label [0]) != NULL) {
       // operation callback
    } else if (strchr (unar_operators, pUpbuffer->Tdata.label [0]) != NULL) {
@@ -52,6 +63,25 @@ void cbb_update_buffer (GtkWidget *button, struct UpdateBuffer *pUpbuffer) {
    } 
 }
 
+
+/*
+ * Receives a pointer to a UpdateBuffer 'object' 
+ * Modifies the string corresponding to the first_value or the second_value
+ * status 1: first value is being written
+ * status 1.5: first value is being written but after the floating point
+ * status 2: the second value is being written 
+ * status 2.5: the second value is being written but after the floating point
+ */
+
+void updateValue (struct UpdateBuffer *pUpbuffer) {
+   if (pUpbuffer->Tdata.status == 1 || pUpbuffer->Tdata.status == 1.5) {
+      // update first value as string
+      strcat (pUpbuffer->Tdata.first_value_str, pUpbuffer->Tdata.label);
+   } else if (pUpbuffer->Tdata.status == 2 || pUpbuffer->Tdata.status == 2.5) {
+      // update second value as string
+      strcat (pUpbuffer->Tdata.second_value_str, pUpbuffer->Tdata.label);
+   }
+}
 
 /*
  * The string receives the conversion of the float number to a string
