@@ -31,32 +31,37 @@ struct UpdateBuffer {
  * status 2: the second value is being written 
  * status 2.5: the second value is being written but after the floating point
  */
-
 void updateValue (struct UpdateBuffer *pUpbuffer) {
    if (pUpbuffer->Tdata.status == 1 || pUpbuffer->Tdata.status == 1.5) {
-      // update first value as string
-      strcat (pUpbuffer->Tdata.first_value_str, pUpbuffer->Tdata.label);
+      pUpbuffer->Tdata.first_value_str [pUpbuffer->Tdata.nr_digits] = pUpbuffer->Tdata.label [0];
    } else if (pUpbuffer->Tdata.status == 2 || pUpbuffer->Tdata.status == 2.5) {
-      // update second value as string
-      strcat (pUpbuffer->Tdata.second_value_str, pUpbuffer->Tdata.label);
+      pUpbuffer->Tdata.second_value_str [pUpbuffer->Tdata.nr_digits] =
+        pUpbuffer->Tdata.label [0];
    }
 }
 
 /*
- * Receives a pointer to a UpdateBuffer 'object'
- * Updates the buffer
+ * Receives a pointer to an UpdateBuffer 'object'
+ * Sets the result_str value
  */
-
-void update_buffer ( struct UpdateBuffer *pUpbuffer) {
+void set_result_str (struct UpdateBuffer *pUpbuffer) {
    if (pUpbuffer->Tdata.status < 2) {
-      gtk_entry_buffer_set_text (GTK_ENTRY_BUFFER (pUpbuffer->bufy), 
-                                 pUpbuffer->Tdata.first_value_str,
-                                 -1);
+      strcpy (pUpbuffer->Tdata.result_str, pUpbuffer->Tdata.first_value_str);
    } else if (pUpbuffer->Tdata.status < 3) {
-      gtk_entry_buffer_set_text (GTK_ENTRY_BUFFER (pUpbuffer->bufy),
-                                 pUpbuffer->Tdata.second_value_str,
-                                 -1);
+      strcpy (pUpbuffer->Tdata.result_str, pUpbuffer->Tdata.second_value_str);
    }
+}
+
+
+
+/*
+ * Receives a pointer to an UpdateBuffer 'object'
+ * Updates the buffer
+ * Every time the result_str variable will update the buffer
+ */
+void update_buffer ( struct UpdateBuffer *pUpbuffer) {
+   gtk_entry_buffer_set_text (GTK_ENTRY_BUFFER (pUpbuffer->bufy), pUpbuffer->Tdata.result_str,
+      -1);
 }
 
 /*
@@ -74,8 +79,6 @@ void cbb_input_manager (GtkWidget *button, struct UpdateBuffer *pUpbuffer) {
    char unar_operators [] = {'b', 'o', 'd', 'h'};
    char bases [4][4] = {"Bin", "Oct", "Dec", "Hex"};
 
-   strcpy (pUpbuffer->Tdata.label, gtk_button_get_label (GTK_BUTTON(button)));
-
    if (strchr (figures, pUpbuffer->Tdata.label [0]) != NULL) {
       if (pUpbuffer->Tdata.label [0] == '.') {
          if (pUpbuffer->Tdata.status == 1) {
@@ -87,6 +90,7 @@ void cbb_input_manager (GtkWidget *button, struct UpdateBuffer *pUpbuffer) {
          }
       }
       updateValue (pUpbuffer);
+      pUpbuffer->Tdata.nr_digits++;
    } else if (strchr (operators, pUpbuffer->Tdata.label [0]) != NULL) {
       
       pUpbuffer->Tdata.new_operator = pUpbuffer->Tdata.label [0];
@@ -111,6 +115,8 @@ void cbb_input_manager (GtkWidget *button, struct UpdateBuffer *pUpbuffer) {
 
    // do_calculus (pUpbuffer);
 
+
+   set_result_str (pUpbuffer);
    // finally, the buffer can be updated
    update_buffer (pUpbuffer); 
 }
@@ -308,6 +314,14 @@ int main (int argc, char *argv[]) {
    Upbuffer.Tdata.first_value = 0;
    Upbuffer.Tdata.second_value = 0;
    Upbuffer.Tdata.result = 0;
+   /*
+   int cells;
+   for (cells = 0; cells < 64; cells++) {
+      Upbuffer.Tdata.first_value_str [cells] = '0';
+      Upbuffer.Tdata.second_value_str [cells] = '0';
+      Upbuffer.Tdata.result_str [cells] = '0';
+   }
+   */
    Upbuffer.Tdata.status = 1;
    Upbuffer.Tdata.nr_digits = 0;
    Upbuffer.Tdata.operator = ' ';
