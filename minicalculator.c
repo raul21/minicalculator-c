@@ -25,15 +25,17 @@ struct UpdateBuffer {
 
 /*
  * Receives a pointer to an UpdateBuffer obj
- * Initializes the UpdateBuffer obj
+ * Initializes the UpdateBuffer obj but not its buffer
  */
 void initialize_up_buffer (struct UpdateBuffer *pUpbuffer) {
-   pUpbuffer->bufy = gtk_entry_buffer_new ("0", -1);
    pUpbuffer->Tdata.first_value = 0;
    pUpbuffer->Tdata.second_value = 0;
    pUpbuffer->Tdata.result = 0;
+   pUpbuffer->Tdata.first_value_str [0] = '0';
+   pUpbuffer->Tdata.second_value_str [0] = '0';
+   pUpbuffer->Tdata.result_str [0] = '0';
    int cells;
-   for (cells = 0; cells < 64; cells++) {
+   for (cells = 1; cells < 64; cells++) {
       pUpbuffer->Tdata.first_value_str [cells] = '\0';
       pUpbuffer->Tdata.second_value_str [cells] = '\0';
       pUpbuffer->Tdata.result_str [cells] = '\0';
@@ -42,7 +44,9 @@ void initialize_up_buffer (struct UpdateBuffer *pUpbuffer) {
    pUpbuffer->Tdata.nr_digits = -1;
    pUpbuffer->Tdata.operator = ' ';
    pUpbuffer->Tdata.new_operator = ' ';
-   pUpbuffer->Tdata.label[3] = '\0';
+   for (cells = 0; cells < 4; cells++) {
+      pUpbuffer->Tdata.label[cells] = '\0';
+   }
 }
 
 /*
@@ -142,19 +146,14 @@ void cbb_input_manager (GtkWidget *button, struct UpdateBuffer *pUpbuffer) {
       }
    } else if (strchr (unar_operators, pUpbuffer->Tdata.label [0]) != NULL) {
       // operation on the first value 
+   } else if (pUpbuffer->Tdata.label [0] == '#') {
+      // reset the calculator
+      initialize_up_buffer (pUpbuffer);
    } else if (strcmp (pUpbuffer->Tdata.label, "Bin") != 0 ||
               strcmp (pUpbuffer->Tdata.label, "Dec") != 0 ||
               strcmp (pUpbuffer->Tdata.label, "Hex") != 0) {
       // change the base
-
-   } else if (pUpbuffer->Tdata.label [0] == '#') {
-      // reset the calculator
-
-      initialize_up_buffer (pUpbuffer);
    }
-
-   // do_calculus (pUpbuffer);
-
 
    manage_status (pUpbuffer);
    set_result_str (pUpbuffer);
@@ -348,7 +347,8 @@ int main (int argc, char *argv[]) {
    struct UpdateBuffer Upbuffer;
    struct UpdateBuffer *pUpbuffer;
    pUpbuffer = &Upbuffer;
-   
+
+   pUpbuffer->bufy = gtk_entry_buffer_new ("0", -1);   
    initialize_up_buffer (pUpbuffer); 
 
    GtkWidget *butt [4][7]; // contains the buttons
