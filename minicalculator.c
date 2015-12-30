@@ -24,6 +24,28 @@ struct UpdateBuffer {
 };
 
 /*
+ * Receives a pointer to an UpdateBuffer obj
+ * Initializes the UpdateBuffer obj
+ */
+void initialize_up_buffer (struct UpdateBuffer *pUpbuffer) {
+   pUpbuffer->bufy = gtk_entry_buffer_new ("0", -1);
+   pUpbuffer->Tdata.first_value = 0;
+   pUpbuffer->Tdata.second_value = 0;
+   pUpbuffer->Tdata.result = 0;
+   int cells;
+   for (cells = 0; cells < 64; cells++) {
+      pUpbuffer->Tdata.first_value_str [cells] = '\0';
+      pUpbuffer->Tdata.second_value_str [cells] = '\0';
+      pUpbuffer->Tdata.result_str [cells] = '\0';
+   }
+   pUpbuffer->Tdata.status = 1;
+   pUpbuffer->Tdata.nr_digits = -1;
+   pUpbuffer->Tdata.operator = ' ';
+   pUpbuffer->Tdata.new_operator = ' ';
+   pUpbuffer->Tdata.label[3] = '\0';
+}
+
+/*
  * Receives a pointer to a UpdateBuffer 'object' 
  * Modifies the string corresponding to the first_value or the second_value
  * status 1: first value is being written
@@ -31,10 +53,10 @@ struct UpdateBuffer {
  * status 2: the second value is being written 
  * status 2.5: the second value is being written but after the floating point
  */
-void updateValue (struct UpdateBuffer *pUpbuffer) {
-   if (pUpbuffer->Tdata.status == 1 || pUpbuffer->Tdata.status == 1.5) {
+void update_value (struct UpdateBuffer *pUpbuffer) {
+   if (pUpbuffer->Tdata.status < 2) {
       pUpbuffer->Tdata.first_value_str [pUpbuffer->Tdata.nr_digits] = pUpbuffer->Tdata.label [0];
-   } else if (pUpbuffer->Tdata.status == 2 || pUpbuffer->Tdata.status == 2.5) {
+   } else if (pUpbuffer->Tdata.status < 3) {
       pUpbuffer->Tdata.second_value_str [pUpbuffer->Tdata.nr_digits] =
         pUpbuffer->Tdata.label [0];
    }
@@ -65,8 +87,22 @@ void update_buffer ( struct UpdateBuffer *pUpbuffer) {
 }
 
 /*
+ * Receives a pointer to a UpdateBuffer 'object'
+ * Depending on the status, the function decides what function should be called
+ */
+void manage_status (struct UpdateBuffer *pUpbuffer) {
+   if (pUpbuffer->Tdata.status < 3) {
+      update_value (pUpbuffer);
+   } else if (pUpbuffer->Tdata.status == 3) {
+      // do some calculations
+   }
+}
+
+/*
  * Receives a pointer to a widget button and a pointer to a UpdateBuffer structure
- * Updates the buffer after the input was precessed
+ * Updates the buffer after the input was processed. The function does three
+ * main tasks: sets the status, calls the manage_status fnction, and when all
+ * this are done, calls  the function that updates the buffer 
  */
 void cbb_input_manager (GtkWidget *button, struct UpdateBuffer *pUpbuffer) {
 
@@ -89,10 +125,8 @@ void cbb_input_manager (GtkWidget *button, struct UpdateBuffer *pUpbuffer) {
             return; // one floating point in a single number is enough
          }
       }
-      updateValue (pUpbuffer);
       pUpbuffer->Tdata.nr_digits++;
    } else if (strchr (operators, pUpbuffer->Tdata.label [0]) != NULL) {
-      
       pUpbuffer->Tdata.new_operator = pUpbuffer->Tdata.label [0];
 
       if (pUpbuffer->Tdata.operator == ' ') {
@@ -101,23 +135,29 @@ void cbb_input_manager (GtkWidget *button, struct UpdateBuffer *pUpbuffer) {
 
       if (pUpbuffer->Tdata.status < 2) {
          pUpbuffer->Tdata.status = 2;
+         pUpbuffer->Tdata.nr_digits = -1;
+         return; // wait for figures for the second value
       } else if (pUpbuffer->Tdata.status < 3) {
          pUpbuffer->Tdata.status = 3;
       }
    } else if (strchr (unar_operators, pUpbuffer->Tdata.label [0]) != NULL) {
       // operation on the first value 
    } else if (strcmp (pUpbuffer->Tdata.label, "Bin") != 0 ||
-              strcmp (pUpbuffer->Tdata.label, "Oct") != 0 ||
               strcmp (pUpbuffer->Tdata.label, "Dec") != 0 ||
               strcmp (pUpbuffer->Tdata.label, "Hex") != 0) {
       // change the base
+
+   } else if (pUpbuffer->Tdata.label [0] == '#') {
+      // reset the calculator
+
+      initialize_up_buffer (pUpbuffer);
    }
 
    // do_calculus (pUpbuffer);
 
 
+   manage_status (pUpbuffer);
    set_result_str (pUpbuffer);
-   // finally, the buffer can be updated
    update_buffer (pUpbuffer); 
 }
 
@@ -139,7 +179,7 @@ void long_double_to_string (char *str, size_t size, long double floaty) {
  * figure - the figure to add to the number
  * Returns a long double after the update was done
  */
-long double update_value (long double value, int nr_digits, double status, char figure) {
+long double update_value_2 (long double value, int nr_digits, double status, char figure) {
    if (figure == '.') {
       return value;
    }
@@ -236,10 +276,10 @@ void cbb_update_buffer_2 (GtkWidget *button, GtkEntryBuffer *buffer) {
 
 
    if (status == 1 || status == 1.5) {
-      first_value = update_value (first_value, nr_digits, status, label[0]);
+      first_value = update_value_2 (first_value, nr_digits, status, label[0]);
       long_double_to_string (val_as_str, 256, first_value);
    } else if (status == 2 || status == 2.5) {
-      second_value = update_value (second_value, nr_digits, status, label[0]);
+      second_value = update_value_2 (second_value, nr_digits, status, label[0]);
       long_double_to_string (val_as_str, 256, second_value);
    } else if (status == 3) {
       first_value = calculate (first_value, second_value, operator);
@@ -309,33 +349,15 @@ int main (int argc, char *argv[]) {
    struct UpdateBuffer *pUpbuffer;
    pUpbuffer = &Upbuffer;
    
-   // Initialization for the Upbuffer
-   Upbuffer.bufy = gtk_entry_buffer_new ("0", -1);
-   Upbuffer.Tdata.first_value = 0;
-   Upbuffer.Tdata.second_value = 0;
-   Upbuffer.Tdata.result = 0;
-   /*
-   int cells;
-   for (cells = 0; cells < 64; cells++) {
-      Upbuffer.Tdata.first_value_str [cells] = '0';
-      Upbuffer.Tdata.second_value_str [cells] = '0';
-      Upbuffer.Tdata.result_str [cells] = '0';
-   }
-   */
-   Upbuffer.Tdata.status = 1;
-   Upbuffer.Tdata.nr_digits = 0;
-   Upbuffer.Tdata.operator = ' ';
-   Upbuffer.Tdata.new_operator = ' ';
-   Upbuffer.Tdata.label[3] = '\0';
-
+   initialize_up_buffer (pUpbuffer); 
 
    GtkWidget *butt [4][7]; // contains the buttons
    // labels for the buttons, that's why it matches butt's design
    gchar *butt_label [4][7] = {
       "1", "2", "3", "4", "+", "^", "Bin",
-      "5", "6", "7", "8", "-", "\u221A", "Oct",
-      "9", "0", "A", "B", "*", ".", "Dec",
-      "C", "D", "E", "F", "/", "=", "Hex"
+      "5", "6", "7", "8", "-", "\u221A", "Dec",
+      "9", "0", "A", "B", "*", ".", "Hex",
+      "C", "D", "E", "F", "/", "=", "#"
    };
 
    gui = gtk_window_new (GTK_WINDOW_TOPLEVEL);
