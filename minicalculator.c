@@ -50,6 +50,62 @@ void initialize_up_buffer (struct UpdateBuffer *pUpbuffer) {
 }
 
 /*
+ * Receives a pointer to an UpdateBuffer 'object'
+ * sets the Tdata.first_value of the 'object'
+ */
+void set_first_value (struct UpdateBuffer *pUpbuffer) {
+   pUpbuffer->Tdata.first_value = atof (pUpbuffer->Tdata.first_value_str);
+}
+
+/*
+ * Receives a pointer to an UpdateBuffer 'object'
+ * sets the Tdata.second_value of the 'object'
+ */
+void set_second_value (struct UpdateBuffer *pUpbuffer) {
+   pUpbuffer->Tdata.second_value = atof (pUpbuffer->Tdata.second_value_str);
+}
+
+/*
+ * Receives a pointer to an UpdateBuffer 'object'
+ * sets the Tdata.result of the 'object'
+ */
+void set_result (struct UpdateBuffer *pUpbuffer) {
+   computes (pUpbuffer);
+}
+
+
+/*
+ * Receives a pointer to an UpdateBuffer 'object'
+ * Does calculations with first_value and second_value
+ * Puts the result in result
+ */
+void computes (struct UpdateBuffer *pUpbuffer) {
+   switch (pUpbuffer->Tdata.operator) {
+      case '+':
+         pUpbuffer->Tdata.result = pUpbuffer->Tdata.first_value +
+            pUpbuffer->Tdata.second_value;
+         break;
+      case '-':
+         pUpbuffer->Tdata.result = pUpbuffer->Tdata.first_value -
+            pUpbuffer->Tdata.second_value;
+         break;
+      case '*':
+         pUpbuffer->Tdata.result = pUpbuffer->Tdata.first_value *
+            pUpbuffer->Tdata.second_value;
+         break;
+      case '/':
+         if (pUpbuffer->Tdata.second_value != 0) {
+            pUpbuffer->Tdata.result = pUpbuffer->Tdata.first_value /
+               pUpbuffer->Tdata.second_value;
+            break;
+         } else {
+            // treats this case in some way
+         }
+   }
+}
+
+
+/*
  * Receives a pointer to a UpdateBuffer 'object' 
  * Modifies the string corresponding to the first_value or the second_value
  * status 1: first value is being written
@@ -75,7 +131,9 @@ void set_result_str (struct UpdateBuffer *pUpbuffer) {
       strcpy (pUpbuffer->Tdata.result_str, pUpbuffer->Tdata.first_value_str);
    } else if (pUpbuffer->Tdata.status < 3) {
       strcpy (pUpbuffer->Tdata.result_str, pUpbuffer->Tdata.second_value_str);
-   }
+   } else if (pUpbuffer->Tdata.status == 3) {
+      //strcpy (pUpbuffer->Tdata.result_str, long_double_to_string
+         //(pUpbuffer->Tdata.result));
 }
 
 
