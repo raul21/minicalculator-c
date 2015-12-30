@@ -50,29 +50,15 @@ void initialize_up_buffer (struct UpdateBuffer *pUpbuffer) {
 }
 
 /*
- * Receives a pointer to an UpdateBuffer 'object'
- * sets the Tdata.first_value of the 'object'
+ * The string receives the conversion of the float number to a string
+ * str, a pointer to a string where the result of the conversion are stored
+ * size, should match the length of the string
+ * floaty, the number to be converted
  */
-void set_first_value (struct UpdateBuffer *pUpbuffer) {
-   pUpbuffer->Tdata.first_value = atof (pUpbuffer->Tdata.first_value_str);
-}
 
-/*
- * Receives a pointer to an UpdateBuffer 'object'
- * sets the Tdata.second_value of the 'object'
- */
-void set_second_value (struct UpdateBuffer *pUpbuffer) {
-   pUpbuffer->Tdata.second_value = atof (pUpbuffer->Tdata.second_value_str);
+void long_double_to_string (char *str, size_t size, long double floaty) {
+   snprintf (str, size, "%0.12Lf", floaty);
 }
-
-/*
- * Receives a pointer to an UpdateBuffer 'object'
- * sets the Tdata.result of the 'object'
- */
-void set_result (struct UpdateBuffer *pUpbuffer) {
-   computes (pUpbuffer);
-}
-
 
 /*
  * Receives a pointer to an UpdateBuffer 'object'
@@ -104,27 +90,57 @@ void computes (struct UpdateBuffer *pUpbuffer) {
    }
 }
 
+/*
+ * Receives a pointer to an UpdateBuffer 'object'
+ * sets the Tdata.first_value of the 'object'
+ */
+void set_first_value (struct UpdateBuffer *pUpbuffer) {
+   pUpbuffer->Tdata.first_value = atof (pUpbuffer->Tdata.first_value_str);
+}
 
 /*
- * Receives a pointer to a UpdateBuffer 'object' 
- * Modifies the string corresponding to the first_value or the second_value
- * status 1: first value is being written
- * status 1.5: first value is being written but after the floating point
- * status 2: the second value is being written 
- * status 2.5: the second value is being written but after the floating point
+ * Receives a pointer to an UpdateBuffer 'object'
+ * Sets the Tdata.first_value_str of the 'object'
  */
-void update_value (struct UpdateBuffer *pUpbuffer) {
+void set_first_value_str (struct UpdateBuffer *pUpbuffer) {
    if (pUpbuffer->Tdata.status < 2) {
-      pUpbuffer->Tdata.first_value_str [pUpbuffer->Tdata.nr_digits] = pUpbuffer->Tdata.label [0];
-   } else if (pUpbuffer->Tdata.status < 3) {
-      pUpbuffer->Tdata.second_value_str [pUpbuffer->Tdata.nr_digits] =
-        pUpbuffer->Tdata.label [0];
+      pUpbuffer->Tdata.first_value_str [pUpbuffer->Tdata.nr_digits] = 
+         pUpbuffer->Tdata.label [0];
+   } else if (pUpbuffer->Tdata.status == 4) {
+      strcpy (pUpbuffer->Tdata.first_value_str, pUpbuffer->Tdata.result_str);
    }
 }
 
 /*
  * Receives a pointer to an UpdateBuffer 'object'
- * Sets the result_str value
+ * sets the Tdata.second_value of the 'object'
+ */
+void set_second_value (struct UpdateBuffer *pUpbuffer) {
+   pUpbuffer->Tdata.second_value = atof (pUpbuffer->Tdata.second_value_str);
+}
+
+/*
+ * Receives a pointer to an UpdateBuffer 'object'
+ * Sets the Tdata.second_value_str of the 'object'
+ */
+void set_second_value_str (struct UpdateBuffer *pUpbuffer) {
+   if (pUpbuffer->Tdata.status == 2 || pUpbuffer->Tdata.status == 2.5) {
+      pUpbuffer->Tdata.second_value_str [pUpbuffer->Tdata.nr_digits] = 
+         pUpbuffer->Tdata.label [0];
+   }
+}
+
+/*
+ * Receives a pointer to an UpdateBuffer 'object'
+ * sets the Tdata.result of the 'object'
+ */
+void set_result (struct UpdateBuffer *pUpbuffer) {
+   computes (pUpbuffer);
+}
+
+/*
+ * Receives a pointer to an UpdateBuffer 'object'
+ * Sets the Tdata.result_str of the 'object'
  */
 void set_result_str (struct UpdateBuffer *pUpbuffer) {
    if (pUpbuffer->Tdata.status < 2) {
@@ -132,11 +148,25 @@ void set_result_str (struct UpdateBuffer *pUpbuffer) {
    } else if (pUpbuffer->Tdata.status < 3) {
       strcpy (pUpbuffer->Tdata.result_str, pUpbuffer->Tdata.second_value_str);
    } else if (pUpbuffer->Tdata.status == 3) {
-      //strcpy (pUpbuffer->Tdata.result_str, long_double_to_string
-         //(pUpbuffer->Tdata.result));
+      long_double_to_string (pUpbuffer->Tdata.result_str, 64, pUpbuffer->Tdata.result); 
    }
 }
 
+
+
+
+/*
+ * Receives a pointer to an UpdateBuffer 'object'
+ * Sets the object; well, some parts of it
+ */
+void set_upbuffer_obj (struct UpdateBuffer *pUpbuffer) {
+   set_first_value_str (pUpbuffer);
+   set_first_value (pUpbuffer);
+   set_second_value_str (pUpbuffer);
+   set_second_value (pUpbuffer);
+   set_result (pUpbuffer);
+   set_result_str (pUpbuffer);
+}
 
 
 /*
@@ -147,18 +177,6 @@ void set_result_str (struct UpdateBuffer *pUpbuffer) {
 void update_buffer ( struct UpdateBuffer *pUpbuffer) {
    gtk_entry_buffer_set_text (GTK_ENTRY_BUFFER (pUpbuffer->bufy), pUpbuffer->Tdata.result_str,
       -1);
-}
-
-/*
- * Receives a pointer to a UpdateBuffer 'object'
- * Depending on the status, the function decides what function should be called
- */
-void manage_status (struct UpdateBuffer *pUpbuffer) {
-   if (pUpbuffer->Tdata.status < 3) {
-      update_value (pUpbuffer);
-   } else if (pUpbuffer->Tdata.status == 3) {
-      // do some calculations
-   }
 }
 
 /*
@@ -214,184 +232,10 @@ void cbb_input_manager (GtkWidget *button, struct UpdateBuffer *pUpbuffer) {
       // change the base
    }
 
-   manage_status (pUpbuffer);
-   set_result_str (pUpbuffer);
+   set_upbuffer_obj (pUpbuffer);
    update_buffer (pUpbuffer); 
 }
 
-/*
- * The string receives the conversion of the float number to a string
- * str, a pointer to a string where the result of the conversion are stored
- * size, should match the length of the string
- * floaty, the number to be converted
- */
-
-void long_double_to_string (char *str, size_t size, long double floaty) {
-   snprintf (str, size, "%0.12Lf", floaty);
-}
-
-/* 
- * value - the value to be updated
- * nr_digits - the number of the digits the value has
- * status - will indicate if the figure is added before or after the comma
- * figure - the figure to add to the number
- * Returns a long double after the update was done
- */
-long double update_value_2 (long double value, int nr_digits, double status, char figure) {
-   if (figure == '.') {
-      return value;
-   }
-   char value_as_string [256];
-   long_double_to_string (value_as_string, 256, value);
-
-   if (value_as_string [nr_digits] == '.' && (status == 1.5 || status == 2.5)) {
-      // write after the comma
-      value_as_string [nr_digits + 1] = figure;
-   } else if (value_as_string [nr_digits] == '.' && (status == 1 || status == 2)) {
-      // write in the place of the comma and move the comma one right
-      value_as_string [nr_digits] = figure;
-      value_as_string [nr_digits + 1] = '.';
-   } else {
-      value_as_string [nr_digits] = figure;
-   }
-
-   return atof (value_as_string);
-}
-
-/*
- * Receives two numbers, an operator and returns the result of the calculation
- *
- */
-long double calculate (long double first_value, long double second_value, char operator) {
-   switch (operator) {
-      case '+':
-         return first_value + second_value;
-         break;
-      case '-':
-         return first_value - second_value;
-         break;
-      case '*':
-         return first_value + second_value;
-         break;
-      case '/':
-         if (second_value != 0) {
-            return first_value / second_value;
-            break;
-         } else {
-            return 0;
-            break;
-         }
-      }
-}
-
-/*
- * Receives a pointer to a button widget and a pointer to an entry's buffer
- * Updates the buffer
- */
-void cbb_update_buffer_2 (GtkWidget *button, GtkEntryBuffer *buffer) {
-   
-   char label[4];
-   strcpy (label, gtk_button_get_label (GTK_BUTTON(button)));
-   label [3] = '\0';
-   
-   /* 
-    * status == 1, the first value is updating before the comma
-    * status == 1.5, the first value is updating after the comma
-    * status == 2, the second value is updating before the comma
-    * status == 2.5, the second value is updating after the comma
-    * status == 3, both values are ready. Calculation time
-    */
-   static double status = 1; // at the begining, the first value is updating
-   static long double first_value = 0;
-   static long double second_value = 0;
-   static int nr_digits = 0;
-   char operator = ' ';
-   char new_operator = ' ';
-   long double result;
-
-   if (label[0] == '+' || label[0] == '-'|| label[0] == '*' || label[0] == '/' || label[0] == '=') {
-      new_operator = label [0];  /**** <<<-------   !!!! */
-      if (operator == ' ') {
-         operator = new_operator;
-      }
-      if (status == 1 || status == 1.5) {
-         status = 2;
-         nr_digits = 0; // start from 0 for the second value
-         return; // stop here and waiting for figures for the second value
-      } else if (status == 2 || status == 2.5) {
-         status = 3; // <----------------------- !!!
-      }
-   } else if (strcmp (label, "Bin") == 0 || strcmp (label, "Dec") == 0 || strcmp (label, "Hex") == 0) {
-      status = 1;
-   } else if (label [0] == '.' && (status == 1 || status == 2)) {
-      status += 0.5;
-   } else if (label [0] == '.' && (status == 1.5 || status == 2.5)) {
-      return; // one comma in one floating point number is enough
-   }
-
-   // Stores the interpretation as string of the value to be displayed
-   char val_as_str [256];
-
-
-   if (status == 1 || status == 1.5) {
-      first_value = update_value_2 (first_value, nr_digits, status, label[0]);
-      long_double_to_string (val_as_str, 256, first_value);
-   } else if (status == 2 || status == 2.5) {
-      second_value = update_value_2 (second_value, nr_digits, status, label[0]);
-      long_double_to_string (val_as_str, 256, second_value);
-   } else if (status == 3) {
-      first_value = calculate (first_value, second_value, operator);
-      long_double_to_string (val_as_str, 256, first_value);
-      second_value = 0;
-      status = 2;
-      nr_digits = -1;
-      operator = new_operator;
-   }
-
-   gtk_entry_buffer_set_text (GTK_ENTRY_BUFFER (buffer), val_as_str, -1);
-   nr_digits++;
-
-}
-
-
-/*
- * Receives the first value, the second value and the status and returns the result
- * Depending on the status, the values are updated
- */
-double manager (double first_value, double second_value, int status) {
-   // nothing yet
-
-}
-
-/*
- * Receives two numbers (double) and returns the sum of them
- */
-double sum (double first_value, double second_value) {
-   return first_value + second_value;
-}
-
-/*
- * Receives two numbers (double) and returns the difference of them
- */
-double difference (double first_value, double second_value) {
-   return first_value - second_value;
-}
-
-/*
- * Receives two numbers (double) and returns the multiplication of them
- */
-double multiplication (double first_value, double second_value) {
-   return first_value * second_value;
-}
-
-/*
- * Receives two numbers (double) and returns the division of them
- */
-double division (double first_value, double second_value) {
-   if (second_value != 0) {
-      return first_value / second_value;
-   }
-}
 
 
 int main (int argc, char *argv[]) {
