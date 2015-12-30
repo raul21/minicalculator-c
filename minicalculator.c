@@ -134,6 +134,7 @@ void set_result_str (struct UpdateBuffer *pUpbuffer) {
    } else if (pUpbuffer->Tdata.status == 3) {
       //strcpy (pUpbuffer->Tdata.result_str, long_double_to_string
          //(pUpbuffer->Tdata.result));
+   }
 }
 
 
