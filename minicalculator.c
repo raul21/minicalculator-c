@@ -62,6 +62,18 @@ void long_double_to_string (char *str, size_t size, long double floaty) {
 
 /*
  * Receives a pointer to an UpdateBuffer 'object'
+ * Sets the nr_digits value
+ */
+void set_nr_digits (struct UpdateBuffer *pUpbuffer) {
+   if (pUpbuffer->Tdata.status == 2) {
+      pUpbuffer->Tdata.nr_digits = -1;
+   } else {
+      pUpbuffer->Tdata.nr_digits++;
+   }
+}
+
+/*
+ * Receives a pointer to an UpdateBuffer 'object'
  * Does calculations with first_value and second_value
  * Puts the result in result
  */
@@ -160,12 +172,14 @@ void set_result_str (struct UpdateBuffer *pUpbuffer) {
  * Sets the object; well, some parts of it
  */
 void set_upbuffer_obj (struct UpdateBuffer *pUpbuffer) {
+   // set_nr_digits (pUpbuffer);
    set_first_value_str (pUpbuffer);
    set_first_value (pUpbuffer);
    set_second_value_str (pUpbuffer);
    set_second_value (pUpbuffer);
    set_result (pUpbuffer);
    set_result_str (pUpbuffer);
+   set_first_value_str (pUpbuffer);
 }
 
 
@@ -206,7 +220,7 @@ void cbb_input_manager (GtkWidget *button, struct UpdateBuffer *pUpbuffer) {
             return; // one floating point in a single number is enough
          }
       }
-      pUpbuffer->Tdata.nr_digits++;
+      pUpbuffer->Tdata.nr_digits++; // <--------------
    } else if (strchr (operators, pUpbuffer->Tdata.label [0]) != NULL) {
       pUpbuffer->Tdata.new_operator = pUpbuffer->Tdata.label [0];
 
@@ -216,7 +230,7 @@ void cbb_input_manager (GtkWidget *button, struct UpdateBuffer *pUpbuffer) {
 
       if (pUpbuffer->Tdata.status < 2) {
          pUpbuffer->Tdata.status = 2;
-         pUpbuffer->Tdata.nr_digits = -1;
+         pUpbuffer->Tdata.nr_digits = -1; // <--------
          return; // wait for figures for the second value
       } else if (pUpbuffer->Tdata.status < 3) {
          pUpbuffer->Tdata.status = 3;
@@ -226,14 +240,33 @@ void cbb_input_manager (GtkWidget *button, struct UpdateBuffer *pUpbuffer) {
    } else if (pUpbuffer->Tdata.label [0] == '#') {
       // reset the calculator
       initialize_up_buffer (pUpbuffer);
-   } else if (strcmp (pUpbuffer->Tdata.label, "Bin") != 0 ||
-              strcmp (pUpbuffer->Tdata.label, "Dec") != 0 ||
-              strcmp (pUpbuffer->Tdata.label, "Hex") != 0) {
+   } else if (strcmp (pUpbuffer->Tdata.label, "Bin") == 0 ||
+              strcmp (pUpbuffer->Tdata.label, "Dec") == 0 ||
+              strcmp (pUpbuffer->Tdata.label, "Hex") == 0) {
       // change the base
+   } else if (strcmp (pUpbuffer->Tdata.label, "cs4") == 0) {
+      pUpbuffer->Tdata.status = 4;
+   } else if (strcmp (pUpbuffer->Tdata.label, "cs2") == 0) {
+      pUpbuffer->Tdata.status = 2;
+      pUpbuffer->Tdata.nr_digits = -1;
+      return;
    }
 
    set_upbuffer_obj (pUpbuffer);
-   update_buffer (pUpbuffer); 
+   update_buffer (pUpbuffer);
+
+   /*
+    * "Input" provided not by the user
+    * cs<number> aka change status to <number>
+    * Example: cs4 means change status to 4
+    */
+   if (pUpbuffer->Tdata.status == 3) {
+      strcpy (pUpbuffer->Tdata.label, "cs4");
+      cbb_input_manager (button, pUpbuffer);
+   } else if (pUpbuffer->Tdata.status == 4) {
+      strcpy (pUpbuffer->Tdata.label, "cs2");
+      cbb_input_manager (button, pUpbuffer);
+   }
 }
 
 
