@@ -155,9 +155,12 @@ void set_result (struct UpdateBuffer *pUpbuffer) {
  * Sets the Tdata.result_str of the 'object'
  */
 void set_result_str (struct UpdateBuffer *pUpbuffer) {
-   if (pUpbuffer->Tdata.status < 2) {
+   if (pUpbuffer->Tdata.status == 1 || 
+       pUpbuffer->Tdata.status == 1.5 ||
+       pUpbuffer->Tdata.status == 4) {
       strcpy (pUpbuffer->Tdata.result_str, pUpbuffer->Tdata.first_value_str);
-   } else if (pUpbuffer->Tdata.status < 3) {
+   } else if (pUpbuffer->Tdata.status == 2 ||
+              pUpbuffer->Tdata.status == 2.5) {
       strcpy (pUpbuffer->Tdata.result_str, pUpbuffer->Tdata.second_value_str);
    } else if (pUpbuffer->Tdata.status == 3) {
       long_double_to_string (pUpbuffer->Tdata.result_str, 64, pUpbuffer->Tdata.result); 
@@ -182,7 +185,6 @@ void set_upbuffer_obj (struct UpdateBuffer *pUpbuffer) {
    set_first_value_str (pUpbuffer);
 }
 
-
 /*
  * Receives a pointer to an UpdateBuffer 'object'
  * Updates the buffer
@@ -194,16 +196,12 @@ void update_buffer ( struct UpdateBuffer *pUpbuffer) {
 }
 
 /*
- * Receives a pointer to a widget button and a pointer to a UpdateBuffer structure
- * Updates the buffer after the input was processed. The function does three
- * main tasks: sets the status, calls the manage_status fnction, and when all
- * this are done, calls  the function that updates the buffer 
+ * Receives a pointer to an UpdateBuffer 'object'
+ * Sets the status and passes it to the function set_upbuffer_obj
+ * After the updating of the object, calls update_buffer function
+ * ( !recursive function )
  */
-void cbb_input_manager (GtkWidget *button, struct UpdateBuffer *pUpbuffer) {
-
-   // the input from the user
-   strcpy (pUpbuffer->Tdata.label, gtk_button_get_label (GTK_BUTTON (button)));
-
+void input_manager (struct UpdateBuffer *pUpbuffer) {
    char figures [] = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0',
                       'A', 'B', 'C', 'D', 'E', 'F', '.'};
    char operators [] = {'+', '-', '*', '/'};
@@ -262,14 +260,22 @@ void cbb_input_manager (GtkWidget *button, struct UpdateBuffer *pUpbuffer) {
     */
    if (pUpbuffer->Tdata.status == 3) {
       strcpy (pUpbuffer->Tdata.label, "cs4");
-      cbb_input_manager (button, pUpbuffer);
+      input_manager (pUpbuffer);
    } else if (pUpbuffer->Tdata.status == 4) {
       strcpy (pUpbuffer->Tdata.label, "cs2");
-      cbb_input_manager (button, pUpbuffer);
+      input_manager (pUpbuffer);
    }
 }
 
-
+/*
+ * Receives a pointer to a widget button and a pointer to a UpdateBuffer 'object'
+ * Gets the input from the user and passes the input to the input_manager function
+ */
+void cbb_get_input (GtkWidget *button, struct UpdateBuffer *pUpbuffer) {
+   // the input from the user
+   strcpy (pUpbuffer->Tdata.label, gtk_button_get_label (GTK_BUTTON (button)));
+   input_manager (pUpbuffer);
+}
 
 int main (int argc, char *argv[]) {
    gtk_init (&argc, &argv);
@@ -317,7 +323,7 @@ int main (int argc, char *argv[]) {
       for (j = 0; j < 7; j++) {
          butt [i][j] = gtk_button_new_with_label (butt_label [i][j]);
          gtk_grid_attach (GTK_GRID (table), butt [i][j], j, i, 1, 1);
-         g_signal_connect (butt [i][j], "clicked", G_CALLBACK (cbb_input_manager), pUpbuffer);
+         g_signal_connect (butt [i][j], "clicked", G_CALLBACK (cbb_get_input), pUpbuffer);
       }
    }
  
