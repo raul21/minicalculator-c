@@ -27,7 +27,7 @@ struct UpdateBuffer {
  * Receives a pointer to an UpdateBuffer obj
  * Initializes the UpdateBuffer obj but not its buffer
  */
-void initialize_up_buffer (struct UpdateBuffer *pUpbuffer) {
+void initialize_tdata (struct UpdateBuffer *pUpbuffer) {
    pUpbuffer->Tdata.first_value = 0;
    pUpbuffer->Tdata.second_value = 0;
    pUpbuffer->Tdata.result = 0;
@@ -35,17 +35,28 @@ void initialize_up_buffer (struct UpdateBuffer *pUpbuffer) {
    pUpbuffer->Tdata.second_value_str [0] = '0';
    pUpbuffer->Tdata.result_str [0] = '0';
    int cells;
-   for (cells = 1; cells < 64; cells++) {
+   for (cells = 0; cells < 64; cells++) {
       pUpbuffer->Tdata.first_value_str [cells] = '\0';
       pUpbuffer->Tdata.second_value_str [cells] = '\0';
       pUpbuffer->Tdata.result_str [cells] = '\0';
    }
    pUpbuffer->Tdata.status = 1;
-   pUpbuffer->Tdata.nr_digits = 0;
+   pUpbuffer->Tdata.nr_digits = -1;
    pUpbuffer->Tdata.operator = ' ';
    pUpbuffer->Tdata.new_operator = ' ';
-   for (cells = 0; cells < 16; cells++) {
+   pUpbuffer->Tdata.label [0] = '0';
+   for (cells = 1; cells < 16; cells++) {
       pUpbuffer->Tdata.label[cells] = '\0';
+   }
+}
+
+/*
+ * Receives a pointer to an UpdateBuffer 'object'
+ * Treats status == 0.5
+ */
+void start (struct UpdateBuffer *pUpbuffer) {
+   if (pUpbuffer->Tdata.status == 0.5) {
+      initialize_tdata (pUpbuffer);
    }
 }
 
@@ -70,10 +81,10 @@ void set_nr_digits (struct UpdateBuffer *pUpbuffer) {
        pUpbuffer->Tdata.status == 2 ||
        pUpbuffer->Tdata.status == 2.5)
    {
-      pUpbuffer->Tdata.nr_digits++'
+      pUpbuffer->Tdata.nr_digits++;
    } else if (pUpbuffer->Tdata.status == 1.7 ||
-              pUpbuffer->Tdata.status == 3) {
-      pUpbuffer->Tdata.nr_digits = 0;
+              pUpbuffer->Tdata.status == 2.7) {
+      pUpbuffer->Tdata.nr_digits = -1;
    }
 }
 
@@ -93,7 +104,7 @@ void set_operator (struct UpdateBuffer *pUpbuffer) {
  * Receives a pointer to an UpdateBuffer 'object'
  * Sets the new_operator
  */
-void set_new_operator (struct UpdateBuffer pUpbuffer) {
+void set_new_operator (struct UpdateBuffer *pUpbuffer) {
    if (pUpbuffer->Tdata.status == 2.7) {
       pUpbuffer->Tdata.new_operator = pUpbuffer->Tdata.label [0];
    }
@@ -142,10 +153,12 @@ void set_first_value (struct UpdateBuffer *pUpbuffer) {
  * Sets the Tdata.first_value_str of the 'object'
  */
 void set_first_value_str (struct UpdateBuffer *pUpbuffer) {
-   if (pUpbuffer->Tdata.status < 2) {
+   if (pUpbuffer->Tdata.status == 1 ||
+       pUpbuffer->Tdata.status == 1.5) {
       pUpbuffer->Tdata.first_value_str [pUpbuffer->Tdata.nr_digits] = 
          pUpbuffer->Tdata.label [0];
-   } else if (pUpbuffer->Tdata.status == 4) {
+   } else if (pUpbuffer->Tdata.status == 4 ||
+              pUpbuffer->Tdata.status == 4.1) {
       strcpy (pUpbuffer->Tdata.first_value_str, pUpbuffer->Tdata.result_str);
    }
 }
@@ -166,6 +179,11 @@ void set_second_value_str (struct UpdateBuffer *pUpbuffer) {
    if (pUpbuffer->Tdata.status == 2 || pUpbuffer->Tdata.status == 2.5) {
       pUpbuffer->Tdata.second_value_str [pUpbuffer->Tdata.nr_digits] = 
          pUpbuffer->Tdata.label [0];
+   } else if (pUpbuffer->Tdata.status == 3.7) {
+      int i;
+      for (i = 0; i < 64; i++) {
+         pUpbuffer->Tdata.second_value_str [i] = '\0';
+      }
    }
 }
 
@@ -184,12 +202,14 @@ void set_result (struct UpdateBuffer *pUpbuffer) {
 void set_result_str (struct UpdateBuffer *pUpbuffer) {
    if (pUpbuffer->Tdata.status == 1 || 
        pUpbuffer->Tdata.status == 1.5 ||
-       pUpbuffer->Tdata.status == 4) {
+       pUpbuffer->Tdata.status == 4 ||
+       pUpbuffer->Tdata.status == 4.1) {
       strcpy (pUpbuffer->Tdata.result_str, pUpbuffer->Tdata.first_value_str);
    } else if (pUpbuffer->Tdata.status == 2 ||
               pUpbuffer->Tdata.status == 2.5) {
       strcpy (pUpbuffer->Tdata.result_str, pUpbuffer->Tdata.second_value_str);
-   } else if (pUpbuffer->Tdata.status == 3) {
+   } else if (pUpbuffer->Tdata.status == 3 ||
+              pUpbuffer->Tdata.status == 3.1) {
       long_double_to_string (pUpbuffer->Tdata.result_str, 64, pUpbuffer->Tdata.result); 
    }
 }
@@ -199,15 +219,16 @@ void set_result_str (struct UpdateBuffer *pUpbuffer) {
  * Sets the object; well, some parts of it
  */
 void set_upbuffer_obj (struct UpdateBuffer *pUpbuffer) {
+   start (pUpbuffer);
    set_nr_digits (pUpbuffer);
    set_operator (pUpbuffer);
+   set_new_operator (pUpbuffer);
    set_first_value_str (pUpbuffer);
    set_first_value (pUpbuffer);
    set_second_value_str (pUpbuffer);
    set_second_value (pUpbuffer);
    set_result (pUpbuffer);
    set_result_str (pUpbuffer);
-   set_first_value_str (pUpbuffer);
 }
 
 /*
@@ -245,21 +266,29 @@ void input_manager (struct UpdateBuffer *pUpbuffer) {
       }
    } else if (strchr (operators, pUpbuffer->Tdata.label [0]) != NULL) {
       if (pUpbuffer->Tdata.status == 1 ||
-          pUpbuffer->Tdata.status == 1.5) {
+          pUpbuffer->Tdata.status == 1.5 ||
+          pUpbuffer->Tdata.status == 1.6) {
          pUpbuffer->Tdata.status = 1.7;
       } else if (pUpbuffer->Tdata.status == 2 ||
                  pUpbuffer->Tdata.status == 2.5) {
          pUpbuffer->Tdata.status = 2.7;
+         if (pUpbuffer->Tdata.operator == pUpbuffer->Tdata.new_operator) {
+            pUpbuffer->Tdata.status = 1.7;
+         }
       }
+   } else if (pUpbuffer->Tdata.label [0] == '=') {
+      pUpbuffer->Tdata.status = 3.1;
    } else if (strchr (unar_operators, pUpbuffer->Tdata.label [0]) != NULL) {
       // operation on the first value 
    } else if (pUpbuffer->Tdata.label [0] == '#') {
       // reset the calculator
-      initialize_up_buffer (pUpbuffer);
+      pUpbuffer->Tdata.status = 0.5;
    } else if (strcmp (pUpbuffer->Tdata.label, "Bin") == 0 ||
               strcmp (pUpbuffer->Tdata.label, "Dec") == 0 ||
               strcmp (pUpbuffer->Tdata.label, "Hex") == 0) {
       // change the base
+   } else if (strcmp (pUpbuffer->Tdata.label, "cs1.6") == 0) {
+      pUpbuffer->Tdata.status = 1.6;
    } else if (strcmp (pUpbuffer->Tdata.label, "cs2") == 0) {
       pUpbuffer->Tdata.status = 2;
       return;
@@ -267,8 +296,10 @@ void input_manager (struct UpdateBuffer *pUpbuffer) {
       pUpbuffer->Tdata.status = 3;
    } else if (strcmp (pUpbuffer->Tdata.label, "cs3.7") == 0) {
       pUpbuffer->Tdata.status = 3.7;
-   } else if (strcmp (pUpbuffer->Tdata.label, "cs4") {
+   } else if (strcmp (pUpbuffer->Tdata.label, "cs4") == 0) {
       pUpbuffer->Tdata.status = 4;
+   } else if (strcmp (pUpbuffer->Tdata.label, "cs4.1") == 0) {
+      pUpbuffer->Tdata.status = 4.1;
    }
 
    set_upbuffer_obj (pUpbuffer);
@@ -285,12 +316,18 @@ void input_manager (struct UpdateBuffer *pUpbuffer) {
    } else if (pUpbuffer->Tdata.status == 3) {
       strcpy (pUpbuffer->Tdata.label, "cs3.7");
       input_manager (pUpbuffer);
+   } else if (pUpbuffer->Tdata.status == 3.1) {
+      strcpy (pUpbuffer->Tdata.label, "cs4.1");
+      input_manager (pUpbuffer);
    } else if (pUpbuffer->Tdata.status == 3.7) {
       strcpy (pUpbuffer->Tdata.label, "cs4");
       input_manager (pUpbuffer);
    } else if (pUpbuffer->Tdata.status == 1.7 ||
               pUpbuffer->Tdata.status == 4) {
       strcpy (pUpbuffer->Tdata.label, "cs2");
+      input_manager (pUpbuffer);
+   } else if (pUpbuffer->Tdata.status == 4.1) {
+      strcpy (pUpbuffer->Tdata.label, "cs1.6");
       input_manager (pUpbuffer);
    }
 }
@@ -319,7 +356,7 @@ int main (int argc, char *argv[]) {
    pUpbuffer = &Upbuffer;
 
    pUpbuffer->bufy = gtk_entry_buffer_new ("0", -1);   
-   initialize_up_buffer (pUpbuffer); 
+   initialize_tdata (pUpbuffer); 
 
    GtkWidget *butt [4][7]; // contains the buttons
    // labels for the buttons, that's why it matches butt's design
